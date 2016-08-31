@@ -1,17 +1,22 @@
+/* jshint esversion: 6 */
+/* jshint node: true */
 'use strict';
 
 var ZWave = require('openzwave-shared');
 var os = require('os');
 
-// logs device state
-function logDeviceState(device) {
-    if (typeof device != 'undefined') {
-        console.log('  device.name          : ' + device.name);
-        console.log('  device.props         : ' + device.props);
-    } else {
-        console.log('device is undefined');
+// This code uses ES2015 syntax that requires at least Node.js v4.
+// For Node.js ES2015 support details, reference http://node.green/
+
+function validateArgumentType(arg, argName, expectedType) {
+    if (typeof arg === 'undefined') {
+        throw new Error('Missing argument: ' + argName + '. ' +
+            'Expected type: ' + expectedType + '.');
+    } else if (typeof arg !== expectedType) {
+        throw new Error('Invalid argument: ' + argName + '. ' +
+            'Expected type: ' + expectedType + ', got: ' + (typeof arg));
     }
-};
+}
 
 var zwave = new ZWave({
     ConsoleOutput: false
@@ -23,80 +28,55 @@ zwave.on('driver failed', function () {
     process.exit();
 });
 
-var device = null;
+//var device = null;
 var nodeId = null;
 var homeId = null;
 
-// module exports, implementing the schema
-module.exports = {
+var deviceType = 'binary_switches';
 
-    initDevice: function (dev) {
+class Translator {
 
-        device = dev;
+    constructor(device) {
+        console.log('Initializing device.');
 
-        if (typeof device != 'undefined') {
-            if (typeof (device.props) !== 'undefined') {
-                var props;
-                try {
-                    props = JSON.parse(device.props);
-                } catch (ex) {
-                    console.log("invalid address string: %s", props.id);
-                    return;
-                }
+        validateArgumentType(device, 'device', 'object');
+        validateArgumentType(device.props, 'device.props', 'object');
 
-
-                homeId = props.id.homeId;
-                nodeId = props.id.nodeId;
-
-                var zwavedriverroot = {
-                    "darwin": '/dev/',
-                    "linux": '/dev/',
-                    "win32": '\\\\.\\'
-                }
-                var deviceAddress = zwavedriverroot[os.platform()] + props.serialPort;
-                console.log("connecting to " + deviceAddress);
-                zwave.connect(zwavedriverroot[os.platform()] + deviceAddress);
-            } else {
-                console.log('props is undefined');
-                return;
-            }
-        } else {
-            console.log('device is undefined');
-            return;
+        nodeId = device.props.id.nodeId;
+        homeId = device.props.id.homeId;
+        
+        var zwavedriverroot = {
+            "darwin": '/dev/',
+            "linux": '/dev/',
+            "win32": '\\\\.\\'
         }
-    },
+        var deviceAddress = zwavedriverroot[os.platform()] + props.serialPort;
+        console.log("connecting to " + deviceAddress);
+        zwave.connect(zwavedriverroot[os.platform()] + deviceAddress);
+    }
 
-    disconnect: function () {
-        console.log('disconnect called.');
 
-        logDeviceState(device);
+    // exports for individual properties
 
+    disconnect () {
         zwave.disconnect(function () {
             console.log('device disconnected');
         });
-    },
-
-    turnOn: function () {
-        console.log("turnOn called.");
-
-        // {node_id:nodeId,	class_id: 37,	instance:1,	index:0}
-        if (nodeId !== 'undefined') {
-            zwave.setValue(nodeId, 37, 1, 0, true);
-        } else {
-            console.log('undefined nodeId');
-            return;
-        }
-    },
-
-    turnOff: function () {
-        console.log("turnOff called.");
-
-        // {node_id:device.nodeId,	class_id: 37,	instance:1,	index:0}
-        if (nodeId !== 'undefined') {
-            zwave.setValue(nodeId, 37, 1, 0, false);
-        } else {
-            console.log('undefined nodeId');
-            return;
-        }
     }
-};
+
+    turnOn() {
+        console.log('turnOn called');
+        validateArgumentType(nodeId, 'nodeId', 'string');
+        zwave.setValue(nodeId, 37, 1, 0, true);
+    }
+
+    turnOff() {
+        console.log('turnOff called');
+        validateArgumentType(nodeId, 'nodeId', 'string');
+        zwave.setValue(nodeId, 37, 1, 0, false);
+    }
+
+}
+
+//Export the translator from the module
+module.exports = Translator;

@@ -8,14 +8,23 @@
         "url": "https://github.com/opent2t/translators.git"
     },
     "main": "thingTranslator.js",
+    "license": "MIT",
+    "scripts": {
+        "test": "ava"
+    },
+    "ava": {
+        "files": [
+            "tests/*.js"
+        ]
+    },
     "dependencies": {
         "openzwave-shared": "git+https://github.com/HenryRawas/node-openzwave-shared.git#fixinstall"
     },
     "devDependencies": {
         "async": "~1.5.2",
         "optimist": "0.6.1",
-        "opent2t-onboarding-zwave": "*"
+        "opent2t-onboarding-zwave": "*",
+        "ava": "^0.15.2"
     },
-    "author": "",
-    "license": "MIT"
+    "author": ""
 }
